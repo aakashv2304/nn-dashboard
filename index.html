@@ -896,7 +896,7 @@ function renderRisks(){
 }
 
 
-async function syncData(){ showSPConfig(); }
+async function syncData(){ fetchData(); }
 
 function parseXLSXRows(raw){
   // Find header row
@@ -966,6 +966,16 @@ setStatus('connecting', 'Syncing live data…');
 // Then fetch from Render server in background and keep polling
 fetchData();
 pollTimer = setInterval(fetchData, POLL_INTERVAL);
+
+// Stubs for removed upload modal functions
+function closeSPModal(){}
+function switchTab(t){}
+function handleFile(f){ if(!f) return; const r=new FileReader(); r.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array'}); const ws=wb.Sheets[wb.SheetNames.find(n=>n.includes('New Orders'))||wb.SheetNames[0]]; const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''}); const parsed=parseXLSXRows(raw); if(parsed.length>0){deals=parsed;rebuildDashboard();alert('Loaded '+deals.length+' deals!');}}catch(e){alert('Error: '+e.message);}}; r.readAsArrayBuffer(f); }
+function showUploadStatus(m,c){ console.log(m); }
+function openSPLink(){ const u=document.getElementById('sp-url-input')?.value; if(u) window.open(u,'_blank'); }
+function saveSPUrl(){ localStorage.setItem('sp_url', document.getElementById('sp-url-input')?.value||''); }
+function showSPMsg(m,c){ console.log(m); }
+
 </script>
 </body>
 </html>
