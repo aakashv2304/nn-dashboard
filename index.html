@@ -432,7 +432,7 @@ hr.d{border:none;border-top:1px solid var(--rule);margin:18px 0}
 
 <script>
 // ─── CONFIG — update RENDER_URL after deploying your server ──────────────────
-const RENDER_URL = window.RENDER_URL || https://nn-dashboard.onrender.com;
+const RENDER_URL = window.RENDER_URL || 'https://nn-dashboard.onrender.com';
 const POLL_INTERVAL = 60000; // 60 seconds
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -730,7 +730,7 @@ function renderTeam(){
         <td>${td.length}</td><td>${fmtN(arr,3)}</td>
         <td><span style="color:var(--G);font-weight:600">${su}</span></td>
         <td><span style="color:var(--GOLD);font-weight:600">${live}</span></td>
-        <td><span style="color:${risk?'var(--RED)':'var(--ink4)';}`+'font-weight:600">'+(risk||'—')+`</span></td></tr>`;
+        <td><span style="color:${risk?'var(--RED)':'var(--ink4)'};font-weight:600">${risk||'—'}</span></td></tr>`;
     }).join('')}</tbody>`;
 
   const teamARR = teams.map(t=>+deals.filter(x=>x.salesTeam===t).reduce((a,x)=>a+(+x.arrValue||0),0).toFixed(3));
