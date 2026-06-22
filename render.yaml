@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: nn-dashboard-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app --workers 1 --threads 2 --timeout 120
+    envVars:
+      - key: SHAREPOINT_URL
+        value: https://botreecoin-my.sharepoint.com/:x:/g/personal/aakash_vimalanathan_botree_co_in/IQDJDmF2hAiIQaSsId82mK8-AUdbxXLv47ZKwTaSJhOpUXQ?e=c2Yczt&download=1
+      - key: REFRESH_SECONDS
+        value: 60

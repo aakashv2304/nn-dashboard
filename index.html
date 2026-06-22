@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NN-ON Deal Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#0f0f0f;--ink2:#2c2c2c;--ink3:#5a5a5a;--ink4:#909090;
+  --rule:#e2e2e2;--rulelite:#f0f0f0;
+  --paper:#faf9f7;--paper2:#f4f2ef;
+  --G:#1a3a2a;--G2:#2d5a3e;--Gl:#e8f0ec;
+  --GOLD:#b8860b;--GOLDl:#fdf6e3;
+  --RED:#8b1a1a;--REDl:#fdf0f0;
+  --BLU:#1a2e4a;--BLUl:#eef2f8;
+  --AMB:#7a4a00;--AMBl:#fdf4e3;
+  --PUR:#4527a0;--PURl:#ede7f6;
+  --ORG:#c45000;--ORGl:#fff3eb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);font-size:13px;line-height:1.5}
+.nav{background:var(--G);display:flex;align-items:stretch;padding:0 36px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.brand{font-family:'DM Serif Display',serif;color:#fff;font-size:14px;padding:13px 20px 13px 0;border-right:1px solid rgba(255,255,255,.15);margin-right:6px;display:flex;flex-direction:column;justify-content:center;white-space:nowrap}
+.brand small{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:1px;font-family:'DM Sans',sans-serif}
+.ntabs{display:flex;align-items:stretch;flex:1;overflow-x:auto}
+.ntab{padding:0 14px;font-size:11.5px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;user-select:none}
+.ntab:hover{color:rgba(255,255,255,.8)}
+.ntab.on{color:#fff;border-bottom-color:#fff}
+.nbadge{background:rgba(255,255,255,.15);border-radius:10px;padding:1px 6px;font-size:10px}
+.ntab.on .nbadge{background:rgba(255,255,255,.25)}
+.nbadge.red{background:rgba(139,26,26,.5)}
+.nbadge.amber{background:rgba(122,74,0,.5)}
+.nright{display:flex;align-items:center;gap:10px;flex-shrink:0;padding-left:14px;border-left:1px solid rgba(255,255,255,.15)}
+.ndate{font-size:10px;color:rgba(255,255,255,.4)}
+.sync-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:rgba(255,255,255,.7);font-size:10px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;gap:5px}
+.sync-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.sync-btn.syncing{color:rgba(255,255,255,.5);pointer-events:none}
+.sp-connect-btn{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.45);color:#fff;font-weight:600;font-size:11px;padding:6px 14px}
+.sp-connect-btn:hover{background:rgba(255,255,255,.35)}
+.sync-status{font-size:9px;color:rgba(255,255,255,.35);white-space:nowrap}
+.cover{background:var(--G);padding:22px 36px 18px;display:flex;justify-content:space-between;align-items:flex-end}
+.cover-title{font-family:'DM Serif Display',serif;font-size:27px;color:#fff;line-height:1.1;margin-bottom:3px}
+.cover-eye{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:5px}
+.cover-sub{font-size:11px;color:rgba(255,255,255,.48)}
+.cover-dv{font-family:'DM Serif Display',serif;font-size:17px;color:rgba(255,255,255,.8);text-align:right}
+.cover-dl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);text-align:right}
+.panel{display:none;animation:fi .2s ease}
+.panel.on{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.page{padding:24px 36px 40px}
+.slbl{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink4);border-bottom:1px solid var(--rule);padding-bottom:5px;margin-bottom:16px;margin-top:24px;display:flex;align-items:center;justify-content:space-between}
+.slbl:first-child{margin-top:0}
+hr.d{border:none;border-top:1px solid var(--rule);margin:18px 0}
+.krow{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+.kpi{background:var(--paper2);border:1px solid var(--rule);border-radius:7px;padding:12px 12px 10px;cursor:pointer;transition:all .15s}
+.kpi:hover{border-color:#999;transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.07)}
+.klbl{font-size:9px;color:var(--ink4);letter-spacing:.04em;line-height:1.3;margin-bottom:4px}
+.kval{font-family:'DM Serif Display',serif;font-size:25px;line-height:1;color:var(--ink)}
+.ksub{font-size:9px;color:var(--ink4);margin-top:2px}
+.kpi.ka{background:var(--G);border-color:var(--G)}
+.kpi.ka .klbl,.kpi.ka .ksub{color:rgba(255,255,255,.5)}
+.kpi.ka .kval{color:#fff}
+.kpi.kr{background:var(--REDl);border-color:#f0c0c0}
+.kpi.kr .kval{color:var(--RED)}
+.kpi.kg{background:var(--GOLDl);border-color:#e8d090}
+.kpi.kg .kval{color:var(--GOLD)}
+.kpi.kb{background:var(--BLUl);border-color:#c0d0e8}
+.kpi.kb .kval{color:var(--BLU)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g6040{display:grid;grid-template-columns:1.55fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:16px}
+.cttl{font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:2px}
+.cdsc{font-size:10px;color:var(--ink4);margin-bottom:12px}
+.frow{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.flbl{font-size:10px;color:var(--ink3);width:140px;flex-shrink:0;text-align:right}
+.ftrack{flex:1;height:22px;background:var(--rulelite);border-radius:3px;overflow:hidden;cursor:pointer}
+.ffill{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;color:#fff;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.fn{width:28px;flex-shrink:0;font-size:11px;font-weight:600;color:var(--ink2);text-align:right}
+.srow{display:grid;grid-template-columns:150px 1fr 48px 48px;align-items:center;gap:8px;margin-bottom:8px}
+.sname{font-size:10px;color:var(--ink2)}
+.sout{height:8px;background:var(--rulelite);border-radius:2px;overflow:hidden}
+.sin{height:100%;border-radius:2px}
+.savg{font-size:11px;font-weight:600;text-align:right}
+.srng{font-size:9px;color:var(--ink4);text-align:right}
+.ins{background:#fff;border:1px solid var(--rule);border-left:3px solid;border-radius:0 7px 7px 0;padding:11px 13px;margin-bottom:9px}
+.ins.r{border-left-color:var(--RED)}
+.ins.g{border-left-color:var(--GOLD)}
+.ins.gr{border-left-color:var(--G)}
+.ins.b{border-left-color:var(--BLU)}
+.ih{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.ins.r .ih{color:var(--RED)}
+.ins.g .ih{color:var(--GOLD)}
+.ins.gr .ih{color:var(--G)}
+.ins.b .ih{color:var(--BLU)}
+.ib{font-size:11px;color:var(--ink2);line-height:1.5}
+.fbtn{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--rule);background:var(--paper2);color:var(--ink3);cursor:pointer;transition:all .12s;font-family:'DM Sans',sans-serif}
+.fbtn:hover{border-color:#aaa;color:var(--ink)}
+.fbtn.on{background:var(--G);border-color:var(--G);color:#fff}
+.srch{position:relative}
+.srch input{width:190px;padding:5px 10px 5px 26px;border:1px solid var(--rule);border-radius:20px;background:var(--paper2);font-size:11px;color:var(--ink);font-family:'DM Sans',sans-serif;outline:none}
+.srch input:focus{border-color:#aaa;background:#fff}
+.srch::before{content:'⌕';position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--ink4);pointer-events:none}
+.dtbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.dtbl th{background:var(--paper2);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);font-weight:500;padding:7px 9px;text-align:left;border-bottom:1px solid var(--rule);cursor:pointer;user-select:none;white-space:nowrap}
+.dtbl th:hover{color:var(--ink2)}
+.dtbl td{padding:7px 9px;border-bottom:1px solid var(--rulelite);color:var(--ink2);vertical-align:middle}
+.dtbl tr:last-child td{border-bottom:none}
+.dtbl tr:hover td{background:var(--paper2);cursor:pointer}
+.bge{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;letter-spacing:.03em;white-space:nowrap}
+.bli{background:var(--Gl);color:var(--G)}
+.bsc{background:#e8f5e9;color:#1b5e20}
+.bua{background:var(--BLUl);color:var(--BLU)}
+.bde{background:var(--PURl);color:var(--PUR)}
+.bpo{background:var(--paper2);color:var(--ink3);border:1px solid var(--rule)}
+.bdr{background:#f5f5f5;color:#757575}
+.bpi{background:var(--AMBl);color:var(--AMB)}
+.btr{background:var(--ORGl);color:var(--ORG)}
+.stbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.stbl th{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);font-weight:500;padding:7px 9px;text-align:left;border-bottom:1px solid var(--rule);background:var(--paper2)}
+.stbl td{padding:8px 9px;border-bottom:1px solid var(--rulelite)}
+.stbl tr:hover td{background:var(--paper2)}
+.rbar{height:6px;border-radius:3px;margin-top:3px}
+/* modal */
+.mb{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;display:none;align-items:center;justify-content:center}
+.mb.on{display:flex}
+.modal{background:#fff;border-radius:10px;padding:22px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:mi .18s ease}
+@keyframes mi{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.mh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.mtit{font-family:'DM Serif Display',serif;font-size:17px}
+.mcl{background:none;border:none;font-size:17px;cursor:pointer;color:var(--ink4);padding:0;line-height:1}
+.mrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--rulelite);font-size:12px}
+.mrow:last-child{border-bottom:none}
+.mkey{color:var(--ink3);flex-shrink:0;width:140px}
+.mval{color:var(--ink2);font-weight:500;text-align:right;word-break:break-word}
+/* delay analysis */
+.da-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.da-card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px}
+.da-reason{font-size:10px;color:var(--ink3);margin-bottom:4px}
+.da-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink)}
+.da-sub{font-size:9px;color:var(--ink4);margin-top:2px}
+.da-card.red{border-color:#f0c0c0;background:var(--REDl)}
+.da-card.red .da-val{color:var(--RED)}
+.da-card.amber{border-color:#e8d090;background:var(--GOLDl)}
+.da-card.amber .da-val{color:var(--GOLD)}
+.da-card.green{border-color:#c0d8c0;background:var(--Gl)}
+.da-card.green .da-val{color:var(--G)}
+.da-card.blue{border-color:#c0d0e8;background:var(--BLUl)}
+.da-card.blue .da-val{color:var(--BLU)}
+/* SharePoint config panel */
+.sp-banner{background:var(--BLUl);border:1px solid #c0d0e8;border-radius:8px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+.sp-icon{font-size:22px;flex-shrink:0}
+.sp-text{flex:1}
+.sp-text strong{font-size:12px;color:var(--BLU)}
+.sp-text p{font-size:10.5px;color:var(--ink3);margin-top:2px}
+.sp-input-row{display:flex;gap:8px;margin-top:10px;align-items:center}
+.sp-input{flex:1;padding:6px 10px;border:1px solid #c0d0e8;border-radius:5px;font-size:11px;font-family:'DM Sans',sans-serif;outline:none;color:var(--ink)}
+.sp-input:focus{border-color:var(--BLU)}
+.sp-save{background:var(--BLU);color:#fff;border:none;border-radius:5px;padding:6px 14px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer}
+.foot{background:var(--paper2);border-top:1px solid var(--rule);padding:10px 36px;display:flex;justify-content:space-between;font-size:10px;color:var(--ink4)}
+.sp-config-link{font-size:10px;color:var(--BLU);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+/* team table */
+.team-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.team-tbl th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink4);font-weight:500;padding:7px 9px;text-align:left;border-bottom:1px solid var(--rule);background:var(--paper2)}
+.team-tbl td{padding:7px 9px;border-bottom:1px solid var(--rulelite);color:var(--ink2)}
+.team-tbl tr:hover td{background:var(--paper2)}
+.pbar{height:5px;border-radius:3px;background:var(--rulelite);overflow:hidden;margin-top:4px}
+.pbar-fill{height:100%;border-radius:3px;background:var(--G)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand">NN-ON Pipeline<small>Scale-Up Tracker</small></div>
+  <div class="ntabs" id="ntabs">
+    <div class="ntab on" data-t="overview">Overview</div>
+    <div class="ntab" data-t="deals">All Deals <span class="nbadge" id="nb-all">41</span></div>
+    <div class="ntab" data-t="funnel">Stage Funnel</div>
+    <div class="ntab" data-t="team">Team View</div>
+    <div class="ntab" data-t="delay">Delay Analysis <span class="nbadge amber" id="nb-delay">16</span></div>
+    <div class="ntab" data-t="risks">Risks &amp; Flags <span class="nbadge red" id="nb-risks">—</span></div>
+  </div>
+  <div class="nright">
+    <div class="ndate" id="ndate">—</div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span id="live-dot" style="width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;animation:pulse 2s infinite"></span>
+      <span id="sync-status" style="font-size:10px;color:rgba(255,255,255,.5)">Connecting…</span>
+    </div>
+    <button class="sync-btn" id="syncBtn" onclick="manualRefresh()">↻ Refresh</button>
+  </div>
+</nav>
+
+<div class="cover">
+  <div>
+    <div class="cover-eye">Botree Software · NN &amp; ON Deals</div>
+    <div class="cover-title">NN-ON Deal Pipeline</div>
+    <div class="cover-sub" id="cover-sub">41 deals · contract-to-live analysis</div>
+  </div>
+  <div><div class="cover-dl">Last updated</div><div class="cover-dv" id="last-updated">Jun 22, 2026</div></div>
+</div>
+
+<!-- OVERVIEW -->
+<div class="panel on" id="p-overview">
+<div class="page">
+  <div class="slbl">Pipeline at a glance — click any card to filter deals</div>
+  <div class="krow" id="krow"></div>
+  <hr class="d">
+  <div class="slbl">Stage distribution &amp; order type split</div>
+  <div class="g6040">
+    <div class="card">
+      <div class="cttl">Stage distribution</div>
+      <div class="cdsc">Click a segment to filter deals</div>
+      <div style="position:relative;height:210px"><canvas id="c-donut"></canvas></div>
+      <div id="donut-legend" style="display:flex;flex-wrap:wrap;gap:5px 12px;margin-top:10px;font-size:10px"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="cttl">Go-Live health</div>
+        <div class="cdsc" id="golive-health-sub">Of all deals tracked</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="golive-grid"></div>
+      </div>
+      <div class="card">
+        <div class="cttl">NN vs ON split</div>
+        <div class="cdsc">By deal count and ARR</div>
+        <div style="position:relative;height:120px"><canvas id="c-nnon"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <hr class="d">
+  <div class="slbl">Key flags</div>
+  <div class="g3" id="flags-grid"></div>
+</div>
+</div>
+
+<!-- ALL DEALS -->
+<div class="panel" id="p-deals">
+<div class="page">
+  <div class="slbl">All Deals
+    <div class="srch"><input type="text" id="dealSearch" placeholder="Search customer, product, team…" oninput="renderDeals()"></div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="fbar"></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="dtbl">
+      <thead><tr>
+        <th onclick="sortD('sno')">#</th>
+        <th onclick="sortD('customer')">Customer ↕</th>
+        <th onclick="sortD('product')">Product</th>
+        <th onclick="sortD('orderType')">Type</th>
+        <th onclick="sortD('salesTeam')">Sales Team</th>
+        <th onclick="sortD('arrValue')">ARR (Crs)</th>
+        <th onclick="sortD('orderValue')">Order Val (Crs)</th>
+        <th onclick="sortD('dateGoLive')">Go Live</th>
+        <th onclick="sortD('status')">Status</th>
+        <th>Delay Reason</th>
+      </tr></thead>
+      <tbody id="deals-body"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- FUNNEL -->
+<div class="panel" id="p-funnel">
+<div class="page">
+  <div class="slbl">Pipeline funnel</div>
+  <div class="g2">
+    <div class="card">
+      <div class="cttl">Deal count by stage</div>
+      <div class="cdsc">Click a bar to jump to those deals</div>
+      <div id="funnel-bars"></div>
+    </div>
+    <div class="card">
+      <div class="cttl">Stage distribution chart</div>
+      <div class="cdsc">Click a bar to filter the All Deals tab</div>
+      <div style="position:relative;height:290px"><canvas id="c-funnel"></canvas></div>
+    </div>
+  </div>
+  <hr class="d">
+  <div class="slbl">Product breakdown</div>
+  <div class="card">
+    <div class="cttl">Deals by product</div>
+    <div class="cdsc">Count and total ARR per product line</div>
+    <div style="position:relative;height:220px"><canvas id="c-prod"></canvas></div>
+  </div>
+</div>
+</div>
+
+<!-- TEAM VIEW -->
+<div class="panel" id="p-team">
+<div class="page">
+  <div class="slbl">Team performance</div>
+  <div class="g2">
+    <div class="card">
+      <div class="cttl">Deals by Sales Team</div>
+      <div class="cdsc">Count, ARR, and stage breakdown</div>
+      <div style="overflow-x:auto">
+        <table class="team-tbl" id="team-table"></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cttl">ARR by Sales Team</div>
+      <div class="cdsc">Total ARR value (Rs Crs)</div>
+      <div style="position:relative;height:320px"><canvas id="c-team"></canvas></div>
+    </div>
+  </div>
+  <hr class="d">
+  <div class="slbl">CH (Customer Head) breakdown</div>
+  <div class="card">
+    <div class="cttl">Deals by Customer Head</div>
+    <div style="position:relative;height:200px"><canvas id="c-ch"></canvas></div>
+  </div>
+</div>
+</div>
+
+<!-- DELAY ANALYSIS -->
+<div class="panel" id="p-delay">
+<div class="page">
+  <div class="slbl">Delay Analysis — ARR at risk by reason</div>
+  <div class="da-summary" id="da-summary"></div>
+  <hr class="d">
+  <div class="g2">
+    <div class="card">
+      <div class="cttl">ARR loss by delay reason</div>
+      <div class="cdsc">Monthly ARR impact (Rs Crs)</div>
+      <div style="position:relative;height:260px"><canvas id="c-delay-pie"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="cttl">Customer breakdown by delay reason</div>
+      <div class="cdsc">Deals with reported delay causes</div>
+      <div style="overflow-x:auto">
+        <table class="stbl" id="delay-breakdown-tbl"></table>
+      </div>
+    </div>
+  </div>
+  <hr class="d">
+  <div class="slbl">Delayed deals detail</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="dtbl" id="delay-deals-tbl">
+      <thead><tr>
+        <th>Customer</th><th>Product</th><th>Sales Team</th>
+        <th>ARR (Crs)</th><th>Monthly Loss</th><th>Status</th><th>Delay Reason</th><th>Comments</th>
+      </tr></thead>
+      <tbody id="delay-deals-body"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- RISKS & FLAGS -->
+<div class="panel" id="p-risks">
+<div class="page">
+  <div class="slbl">Risks &amp; flags — deals needing attention</div>
+  <div id="risks-list"></div>
+</div>
+</div>
+
+<!-- MODAL -->
+<div class="mb" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="mh">
+      <div class="mtit" id="modal-title">Deal Detail</div>
+      <button class="mcl" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- DATA UPDATE MODAL -->
+<div class="mb" id="sp-modal" onclick="if(event.target===this)closeSPModal()">
+  <div class="modal" style="max-width:540px">
+    <div class="mh">
+      <div class="mtit">Update Dashboard Data</div>
+      <button class="mcl" onclick="closeSPModal()">✕</button>
+    </div>
+
+    <!-- TAB SWITCHER -->
+    <div style="display:flex;gap:0;border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin-bottom:18px">
+      <button id="tab-upload-btn" onclick="switchTab('upload')" style="flex:1;padding:8px;font-size:11px;font-family:'DM Sans',sans-serif;border:none;background:var(--G);color:#fff;cursor:pointer;font-weight:600">📁 Upload Excel File</button>
+      <button id="tab-sp-btn" onclick="switchTab('sp')" style="flex:1;padding:8px;font-size:11px;font-family:'DM Sans',sans-serif;border:none;background:var(--paper2);color:var(--ink3);cursor:pointer">🔗 SharePoint Link</button>
+    </div>
+
+    <!-- UPLOAD TAB -->
+    <div id="tab-upload">
+      <p style="font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.6">
+        Upload your latest Excel file and the dashboard updates <strong>instantly</strong>. No internet connection required.
+      </p>
+      <div id="drop-zone" onclick="document.getElementById('fileInput').click()" style="border:2px dashed var(--rule);border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:all .15s;background:var(--paper2)"
+        ondragover="event.preventDefault();this.style.borderColor='var(--G)'"
+        ondragleave="this.style.borderColor='var(--rule)'"
+        ondrop="event.preventDefault();this.style.borderColor='var(--rule)';handleFile(event.dataTransfer.files[0])">
+        <div style="font-size:28px;margin-bottom:8px">📊</div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px">Drop your Excel file here</div>
+        <div style="font-size:11px;color:var(--ink4)">or click to browse · .xlsx files only</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
+      </div>
+      <div id="upload-status" style="margin-top:12px;font-size:11px;display:none"></div>
+      <div style="margin-top:14px;padding:10px 12px;background:var(--BLUl);border-radius:6px;border-left:3px solid var(--BLU)">
+        <div style="font-size:10px;font-weight:600;color:var(--BLU);margin-bottom:3px">TIP — For frequent updates</div>
+        <div style="font-size:10.5px;color:var(--ink3)">Download the latest Excel from SharePoint → drop it here → dashboard refreshes. Takes under 10 seconds.</div>
+      </div>
+    </div>
+
+    <!-- SHAREPOINT TAB -->
+    <div id="tab-sp" style="display:none">
+      <div style="background:var(--REDl);border:1px solid #f0c0c0;border-radius:6px;padding:12px;margin-bottom:14px;font-size:11px;color:var(--ink2)">
+        <strong style="color:var(--RED)">⚠ Browser limitation:</strong> Direct SharePoint/OneDrive fetch is blocked by browsers (CORS policy). Instead, use the <strong>SharePoint Download URL</strong> below to open &amp; download the file, then upload it above.
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;font-weight:600">Save your SharePoint link for quick access:</div>
+      <input type="text" id="sp-url-input" class="sp-input" placeholder="https://yourcompany.sharepoint.com/…" style="width:100%;margin-bottom:10px">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button onclick="openSPLink()" style="flex:1;background:var(--BLU);color:#fff;border:none;border-radius:5px;padding:8px 14px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer">🔗 Open in SharePoint</button>
+        <button onclick="saveSPUrl()" style="padding:8px 14px;border:1px solid var(--rule);border-radius:5px;background:var(--paper2);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer">Save Link</button>
+      </div>
+      <div style="font-size:10.5px;color:var(--ink4);line-height:1.6">
+        <strong>Workflow:</strong> Click "Open in SharePoint" → Download the file → Switch to "Upload Excel File" tab → Drop the file → Done ✓
+      </div>
+    </div>
+
+    <div id="sp-msg" style="margin-top:10px;font-size:10.5px;display:none"></div>
+  </div>
+</div>
+
+<div class="foot">
+  <span>Botree Software · NN-ON Deals Scale-Up Tracker</span>
+  <span id="foot-count">41 deals loaded</span>
+</div>
+
+<script>
+// ─── CONFIG — update RENDER_URL after deploying your server ──────────────────
+const RENDER_URL = window.RENDER_URL || 'YOUR_RENDER_URL_HERE';
+const POLL_INTERVAL = 60000; // 60 seconds
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let deals = [];
+let sortCol = 'sno', sortAsc = true;
+let filterStatus = 'all';
+let charts = {};
+let pollTimer = null;
+
+// ─── FETCH DATA FROM RENDER SERVER ───────────────────────────────────────────
+async function fetchData() {
+  if (RENDER_URL === 'YOUR_RENDER_URL_HERE') {
+    setStatus('error', '⚠ Set your Render URL in dashboard.html');
+    return;
+  }
+  try {
+    setStatus('connecting', 'Fetching…');
+    const res = await fetch(RENDER_URL + '/api/data');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (json.deals && json.deals.length > 0) {
+      deals = json.deals;
+      if (json.delay_analysis) window._delayAnalysis = json.delay_analysis;
+      const updated = json.last_updated ? new Date(json.last_updated).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      document.getElementById('ndate').textContent = updated;
+      document.getElementById('last-updated').textContent = updated;
+      setStatus('live', 'Live · ' + deals.length + ' deals');
+      rebuildDashboard();
+    }
+  } catch(e) {
+    setStatus('error', 'Offline — retrying…');
+    console.error('Fetch error:', e);
+  }
+}
+
+function setStatus(state, msg) {
+  document.getElementById('sync-status').textContent = msg;
+  const dot = document.getElementById('live-dot');
+  dot.style.background = state === 'live' ? '#4caf50' : state === 'error' ? '#f44336' : '#ff9800';
+  dot.style.animation = state === 'live' ? 'pulse 2s infinite' : 'none';
+}
+
+async function manualRefresh() {
+  try {
+    await fetch(RENDER_URL + '/api/refresh', {method:'POST'});
+    setTimeout(fetchData, 2000); // wait 2s for server to refresh then pull
+  } catch(e) {
+    fetchData();
+  }
+}
+
+// ─── STATUS HELPERS ───────────────────────────────────────────────────────────
+const STATUS_COLORS = {
+  'Scaled Up': '#1a3a2a','Live':'#b8860b','UAT':'#1a2e4a',
+  'Dev/Pilot':'#4527a0','Not Started':'#888','Dropped':'#bbb','Training':'#c45000'
+};
+function statusBadge(s){
+  const cls = {
+    'Scaled Up':'bli bsc','Live':'bli','UAT':'bua','Dev/Pilot':'bde',
+    'Not Started':'bpo','Dropped':'bdr','Training':'btr'
+  }[s]||'bpo';
+  return `<span class="bge ${cls}">${s}</span>`;
+}
+function fmtN(v,d=4){if(!v||isNaN(v))return '—';return (+v).toFixed(d).replace(/\.?0+$/,'');}
+function fmtD(s){if(!s||s==='\u00a0'||s.trim()==='')return '—';const m=s.match(/(\d{4}-\d{2}-\d{2})/);return m?m[1].split('-').reverse().join('/'):(s.length>10?s.slice(0,10):s);}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.ntab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.ntab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById('p-'+t.dataset.t).classList.add('on');
+    if(t.dataset.t==='deals') renderDeals();
+    if(t.dataset.t==='funnel') renderFunnel();
+    if(t.dataset.t==='team') renderTeam();
+    if(t.dataset.t==='delay') renderDelay();
+    if(t.dataset.t==='risks') renderRisks();
+  });
+});
+
+// ─── OVERVIEW ────────────────────────────────────────────────────────────────
+function renderOverview(){
+  const d = deals;
+  const cnt = s => d.filter(x=>x.status===s).length;
+  const totalARR = d.reduce((a,x)=>a+(+x.arrValue||0),0);
+  const liveARR = d.filter(x=>x.status==='Live'||x.status==='Scaled Up').reduce((a,x)=>a+(+x.arrValue||0),0);
+  const delayedArr = d.filter(x=>x.delayReason&&x.delayReason!=='On track'&&x.delayReason!=='').reduce((a,x)=>a+(+x.arrValue||0),0);
+
+  document.getElementById('cover-sub').textContent = `${d.length} deals · ${[...new Set(d.map(x=>x.customer).filter(c=>c&&c!=='—'))].length} customers · contract-to-live analysis`;
+  document.getElementById('foot-count').textContent = `${d.length} deals loaded`;
+
+  const kpiData = [
+    {label:'Total Deals',val:d.length,sub:`${d.filter(x=>x.orderType==='NN').length} NN · ${d.filter(x=>x.orderType==='ON').length} ON`,cls:'ka',s:'all'},
+    {label:'Scaled Up',val:cnt('Scaled Up'),sub:`of pipeline`,cls:'kg',s:'Scaled Up'},
+    {label:'Live',val:cnt('Live'),sub:`in production`,cls:'',s:'Live'},
+    {label:'In UAT',val:cnt('UAT'),sub:`quality testing`,cls:'',s:'UAT'},
+    {label:'Dev / Pilot',val:cnt('Dev/Pilot')+cnt('Training'),sub:`development stage`,cls:'',s:'Dev/Pilot'},
+    {label:'Not Started',val:cnt('Not Started'),sub:`awaiting start`,cls:'kb',s:'Not Started'},
+    {label:'Dropped',val:cnt('Dropped'),sub:`deals lost`,cls:'kr',s:'Dropped'},
+    {label:'Total ARR',val:'₹'+fmtN(totalARR,2)+'Cr',sub:`Pipeline ARR`,cls:'',s:'all'},
+  ];
+  document.getElementById('krow').innerHTML = kpiData.map(k=>`
+    <div class="kpi ${k.cls}" onclick="jumpTo('${k.s}')">
+      <div class="klbl">${k.label}</div>
+      <div class="kval" style="font-size:${typeof k.val==='string'?'18':'25'}px">${k.val}</div>
+      <div class="ksub">${k.sub}</div>
+    </div>`).join('');
+
+  // Badge counts
+  document.getElementById('nb-all').textContent = d.length;
+  document.getElementById('nb-delay').textContent = d.filter(x=>x.delayReason&&x.delayReason!=='On track'&&x.delayReason!=='').length;
+  const risks = d.filter(x=>x.sdhComment&&x.sdhComment.length>5&&(x.status==='UAT'||x.status==='Dev/Pilot'||x.status==='Training'));
+  document.getElementById('nb-risks').textContent = risks.length;
+
+  // Donut
+  const stages = ['Scaled Up','Live','UAT','Dev/Pilot','Not Started','Dropped','Training'];
+  const stageCounts = stages.map(s=>d.filter(x=>x.status===s).length);
+  const stageColors = stages.map(s=>STATUS_COLORS[s]||'#999');
+  destroyChart('c-donut');
+  charts['c-donut'] = new Chart(document.getElementById('c-donut'),{
+    type:'doughnut',
+    data:{labels:stages,datasets:[{data:stageCounts,backgroundColor:stageColors,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}`}}},onClick:(_,els)=>{if(els[0])jumpTo(stages[els[0].index]);}}
+  });
+  document.getElementById('donut-legend').innerHTML = stages.map((s,i)=>`
+    <span style="display:flex;align-items:center;gap:4px;cursor:pointer" onclick="jumpTo('${s}')">
+      <span style="width:8px;height:8px;border-radius:2px;background:${stageColors[i]};display:inline-block"></span>${s} (${stageCounts[i]})
+    </span>`).join('');
+
+  // Go-live health
+  const glAchieved = d.filter(x=>x.dateGoLive&&x.dateGoLive.length>2&&!x.dateGoLive.includes('nan')).length;
+  const glDropped = cnt('Dropped');
+  const glNotStarted = cnt('Not Started');
+  const glAtRisk = d.filter(x=>x.delayReason&&x.delayReason!=='On track'&&x.delayReason!=='').length;
+  document.getElementById('golive-health-sub').textContent = `Of ${d.length} deals tracked`;
+  document.getElementById('golive-grid').innerHTML = `
+    <div style="text-align:center;padding:10px 4px;background:var(--Gl);border-radius:6px"><div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--G)">${glAchieved}</div><div style="font-size:9px;color:var(--G);margin-top:1px">Go-Live Set</div><div style="font-size:9px;color:var(--ink4)">${Math.round(glAchieved/d.length*100)}%</div></div>
+    <div style="text-align:center;padding:10px 4px;background:var(--REDl);border-radius:6px"><div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--RED)">${glAtRisk}</div><div style="font-size:9px;color:var(--RED);margin-top:1px">Delayed / At Risk</div><div style="font-size:9px;color:var(--ink4)">${Math.round(glAtRisk/d.length*100)}%</div></div>
+    <div style="text-align:center;padding:10px 4px;background:var(--paper2);border-radius:6px;border:1px solid var(--rule)"><div style="font-family:'DM Serif Display',serif;font-size:24px;color:var(--ink2)">${glNotStarted}</div><div style="font-size:9px;color:var(--ink3);margin-top:1px">Not Started</div><div style="font-size:9px;color:var(--ink4)">${Math.round(glNotStarted/d.length*100)}%</div></div>
+    <div style="text-align:center;padding:10px 4px;background:#f5f5f5;border-radius:6px"><div style="font-family:'DM Serif Display',serif;font-size:24px;color:#757575">${glDropped}</div><div style="font-size:9px;color:#757575;margin-top:1px">Dropped</div><div style="font-size:9px;color:var(--ink4)">${Math.round(glDropped/d.length*100)}%</div></div>`;
+
+  // NN vs ON bar
+  const nnArr = d.filter(x=>x.orderType==='NN').reduce((a,x)=>a+(+x.arrValue||0),0);
+  const onArr = d.filter(x=>x.orderType==='ON').reduce((a,x)=>a+(+x.arrValue||0),0);
+  destroyChart('c-nnon');
+  charts['c-nnon'] = new Chart(document.getElementById('c-nnon'),{
+    type:'bar',
+    data:{labels:['NN','ON'],datasets:[
+      {label:'Deal Count',data:[d.filter(x=>x.orderType==='NN').length,d.filter(x=>x.orderType==='ON').length],backgroundColor:['#1a3a2a','#1a2e4a'],borderRadius:4,yAxisID:'y'},
+      {label:'ARR (Crs)',data:[+nnArr.toFixed(3),+onArr.toFixed(3)],backgroundColor:['#b8860b','#4527a0'],borderRadius:4,yAxisID:'y1'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}}},scales:{y:{display:true,title:{display:true,text:'Count',font:{size:8}}},y1:{display:true,position:'right',title:{display:true,text:'ARR',font:{size:8}},grid:{drawOnChartArea:false}}}}
+  });
+
+  // Key flags
+  const flagsEl = document.getElementById('flags-grid');
+  const delayed = d.filter(x=>x.delayReason&&x.delayReason!=='On track'&&x.delayReason!==''&&x.arrValue>0).sort((a,b)=>b.arrValue-a.arrValue).slice(0,2);
+  const flags = [
+    ...delayed.map(x=>({cls:'r',title:`⚠ ${x.delayReason} — ${x.customer}`,body:`${x.product} · ₹${fmtN(x.arrValue,3)}Cr ARR at risk. ${x.sdhComment.slice(0,80)||'Status: '+x.status}`})),
+    {cls:'g',title:'⚑ Billing Dispute — Sweet Nutri Nigeria',body:'Live but client pushed back on billing. ₹1.04L/month ARR at risk. Negotiation ongoing.'},
+    {cls:'gr',title:'✓ Scale-up Momentum',body:`${cnt('Scaled Up')} deals fully scaled up. Henkel, JacOlivol, Purpos Planet completed.`},
+    {cls:'r',title:'⚠ PO Missing — RC Mexico',body:'Dev planned but PO not received. Revenue not recognisable until PO confirmed.'},
+    {cls:'g',title:'⚑ Kenvue PH — ₹0.54Cr ARR',body:'SFA Release Delayed — 06th June 2026 release critical. Any slip pushes go-live to Aug–Sep.'},
+  ];
+  flagsEl.innerHTML = flags.slice(0,6).map(f=>`<div class="ins ${f.cls}"><div class="ih">${f.title}</div><div class="ib">${f.body}</div></div>`).join('');
+}
+
+// ─── ALL DEALS ────────────────────────────────────────────────────────────────
+function renderDeals(){
+  const q = (document.getElementById('dealSearch')?.value||'').toLowerCase();
+  const stages = ['all','Scaled Up','Live','UAT','Dev/Pilot','Not Started','Dropped','Training'];
+  const stageCnt = s => deals.filter(x=>x.status===s).length;
+  document.getElementById('fbar').innerHTML = stages.map(s=>`
+    <button class="fbtn${filterStatus===s?' on':''}" data-s="${s}" onclick="setF(this)">
+      ${s==='all'?`All (${deals.length})`:s==='Dev/Pilot'?`Dev/Pilot (${stageCnt('Dev/Pilot')+stageCnt('Training')})`:s==='Training'?'':s+` (${stageCnt(s)})`}
+    </button>`).filter(x=>!x.includes('Training (')).join('');
+
+  let rows = deals.filter(d=>{
+    if(filterStatus!=='all'&&d.status!==filterStatus){
+      if(filterStatus==='Dev/Pilot'&&d.status==='Training') return true;
+      return false;
+    }
+    if(q&&!(d.customer+d.product+d.salesTeam+d.status+d.delayReason).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  rows = rows.slice().sort((a,b)=>{
+    let av=a[sortCol],bv=b[sortCol];
+    if(typeof av==='number') return sortAsc?av-bv:bv-av;
+    return sortAsc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
+  });
+
+  document.getElementById('deals-body').innerHTML = rows.map(d=>`
+    <tr onclick="showDeal(${d.sno})">
+      <td style="color:var(--ink4)">${d.sno}</td>
+      <td><strong>${d.customer}</strong></td>
+      <td>${d.product||'—'}</td>
+      <td><span class="bge" style="background:${d.orderType==='NN'?'var(--Gl)':'var(--BLUl)'};color:${d.orderType==='NN'?'var(--G)':'var(--BLU)'}">${d.orderType||'—'}</span></td>
+      <td>${d.salesTeam||'—'}</td>
+      <td style="font-weight:500">${fmtN(d.arrValue,3)||'—'}</td>
+      <td>${fmtN(d.orderValue,3)||'—'}</td>
+      <td style="font-size:10.5px">${fmtD(d.dateGoLive)}</td>
+      <td>${statusBadge(d.status)}</td>
+      <td style="font-size:10.5px;color:${d.delayReason?'var(--RED)':'var(--ink4)'}">${d.delayReason||'—'}</td>
+    </tr>`).join('');
+}
+function setF(btn){
+  filterStatus=btn.dataset.s;
+  document.querySelectorAll('#fbar .fbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderDeals();
+}
+function sortD(col){
+  if(sortCol===col) sortAsc=!sortAsc; else {sortCol=col;sortAsc=true;}
+  renderDeals();
+}
+function jumpTo(status){
+  filterStatus=status;
+  document.querySelectorAll('.ntab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+  document.querySelector('[data-t="deals"]').classList.add('on');
+  document.getElementById('p-deals').classList.add('on');
+  renderDeals();
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function showDeal(sno){
+  const d = deals.find(x=>x.sno===sno); if(!d) return;
+  document.getElementById('modal-title').textContent = `${d.customer} — ${d.product}`;
+  const rows = [
+    ['Status',statusBadge(d.status)],['Order Type',d.orderType],['Sales Team',d.salesTeam],['CH',d.ch||'—'],
+    ['Order Value (Crs)',fmtN(d.orderValue,4)],['ARR Value (Crs)',fmtN(d.arrValue,4)],['One-Time Value (Crs)',fmtN(d.oneTimeValue,4)],
+    ['ARR Invoiced',fmtN(d.arrInvoiced,4)],['ARR Balance',fmtN(d.arrBalance,4)],
+    ['Date Verbal Signoff',fmtD(d.dateVerbal)],['Date PO',fmtD(d.datePO)],['Date Contract',fmtD(d.dateContract)],
+    ['Discovery / Scoping',fmtD(d.dateDiscovery)],['Master Data',fmtD(d.dateMasterData)],['Dev Start',fmtD(d.dateDev)],
+    ['UAT Date',fmtD(d.dateUAT)],['Go Live Date',fmtD(d.dateGoLive)],['Scaling Date',fmtD(d.dateScaling)],
+    ['Delay Reason',d.delayReason||'—'],['SDH Comment',d.sdhComment||'—'],['Review Comments',d.reviewComment||'—'],
+  ];
+  document.getElementById('modal-body').innerHTML = rows.map(([k,v])=>`<div class="mrow"><div class="mkey">${k}</div><div class="mval">${v}</div></div>`).join('');
+  document.getElementById('modal').classList.add('on');
+}
+function closeModal(){document.getElementById('modal').classList.remove('on');}
+
+// ─── FUNNEL ───────────────────────────────────────────────────────────────────
+function renderFunnel(){
+  const stages = ['Scaled Up','Live','UAT','Dev/Pilot','Training','Not Started','Dropped'];
+  const counts = stages.map(s=>deals.filter(x=>x.status===s).length);
+  const maxC = Math.max(...counts);
+  const colors = stages.map(s=>STATUS_COLORS[s]||'#999');
+  document.getElementById('funnel-bars').innerHTML = stages.map((s,i)=>`
+    <div class="frow">
+      <div class="flbl">${s}</div>
+      <div class="ftrack" onclick="jumpTo('${s}')">
+        <div class="ffill" style="width:${counts[i]/maxC*100}%;background:${colors[i]}">${counts[i]}</div>
+      </div>
+      <div class="fn">${counts[i]}</div>
+    </div>`).join('');
+
+  destroyChart('c-funnel');
+  charts['c-funnel'] = new Chart(document.getElementById('c-funnel'),{
+    type:'bar',
+    data:{labels:stages,datasets:[{data:counts,backgroundColor:colors,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}},onClick:(_,els)=>{if(els[0])jumpTo(stages[els[0].index]);}}
+  });
+
+  // Product breakdown
+  const products = [...new Set(deals.map(x=>x.product).filter(Boolean).filter(p=>p!=='—'))];
+  const prodCounts = products.map(p=>deals.filter(x=>x.product===p).length);
+  const prodARR = products.map(p=>+deals.filter(x=>x.product===p).reduce((a,x)=>a+(+x.arrValue||0),0).toFixed(3));
+  destroyChart('c-prod');
+  charts['c-prod'] = new Chart(document.getElementById('c-prod'),{
+    type:'bar',
+    data:{labels:products,datasets:[
+      {label:'Count',data:prodCounts,backgroundColor:'#1a3a2a',borderRadius:3,yAxisID:'y'},
+      {label:'ARR (Crs)',data:prodARR,backgroundColor:'#b8860b',borderRadius:3,yAxisID:'y1'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}}},scales:{x:{ticks:{font:{size:8},maxRotation:40}},y:{ticks:{font:{size:9}}},y1:{position:'right',ticks:{font:{size:9}},grid:{drawOnChartArea:false}}}}
+  });
+}
+
+// ─── TEAM ─────────────────────────────────────────────────────────────────────
+function renderTeam(){
+  const teams = [...new Set(deals.map(x=>x.salesTeam).filter(t=>t&&t!=='nan'&&t!=='—'))].sort();
+  const maxARR = Math.max(...teams.map(t=>deals.filter(x=>x.salesTeam===t).reduce((a,x)=>a+(+x.arrValue||0),0)));
+  document.getElementById('team-table').innerHTML = `
+    <thead><tr><th>Sales Team</th><th>Deals</th><th>ARR (Crs)</th><th>Scaled Up</th><th>Live</th><th>At Risk</th></tr></thead>
+    <tbody>${teams.map(t=>{
+      const td = deals.filter(x=>x.salesTeam===t);
+      const arr = td.reduce((a,x)=>a+(+x.arrValue||0),0);
+      const su = td.filter(x=>x.status==='Scaled Up').length;
+      const live = td.filter(x=>x.status==='Live').length;
+      const risk = td.filter(x=>x.delayReason&&x.delayReason!=='On track'&&x.delayReason!=='').length;
+      return `<tr>
+        <td><strong>${t}</strong><div class="pbar"><div class="pbar-fill" style="width:${arr/maxARR*100}%"></div></div></td>
+        <td>${td.length}</td><td>${fmtN(arr,3)}</td>
+        <td><span style="color:var(--G);font-weight:600">${su}</span></td>
+        <td><span style="color:var(--GOLD);font-weight:600">${live}</span></td>
+        <td><span style="color:${risk?'var(--RED)':'var(--ink4)';}`+'font-weight:600">'+(risk||'—')+`</span></td></tr>`;
+    }).join('')}</tbody>`;
+
+  const teamARR = teams.map(t=>+deals.filter(x=>x.salesTeam===t).reduce((a,x)=>a+(+x.arrValue||0),0).toFixed(3));
+  destroyChart('c-team');
+  charts['c-team'] = new Chart(document.getElementById('c-team'),{
+    type:'bar',
+    data:{labels:teams,datasets:[{label:'ARR (Crs)',data:teamARR,backgroundColor:'#1a3a2a',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}
+  });
+
+  const chs = [...new Set(deals.map(x=>x.ch).filter(c=>c&&c!=='nan'&&c!=='—'&&c!==''))].sort();
+  const chCounts = chs.map(c=>deals.filter(x=>x.ch===c).length);
+  destroyChart('c-ch');
+  charts['c-ch'] = new Chart(document.getElementById('c-ch'),{
+    type:'bar',
+    data:{labels:chs,datasets:[{label:'Deals',data:chCounts,backgroundColor:'#2d5a3e',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}
+  });
+}
+
+// ─── DELAY ANALYSIS ───────────────────────────────────────────────────────────
+function renderDelay(){
+  // Use Delay Analysis workbook data (hardcoded from sheet, live from Excel)
+  const delayData = [
+    {reason:'Botree Deployment',customers:1,arr:0.54,monthly:0.045,pct:18.85},
+    {reason:'Botree Product',customers:6,arr:0.8523,monthly:0.071025,pct:29.75},
+    {reason:'Customer',customers:6,arr:0.607,monthly:0.050583,pct:21.19},
+    {reason:'Customer & Botree Product',customers:1,arr:0.12,monthly:0.01,pct:4.19},
+    {reason:'On track',customers:2,arr:0.7455,monthly:0.062125,pct:26.02},
+  ];
+
+  const totalMonthly = delayData.reduce((a,x)=>a+x.monthly,0);
+  const totalARR = delayData.reduce((a,x)=>a+x.arr,0);
+  const colorMap = {'Botree Deployment':'red','Botree Product':'red','Customer':'amber','Customer & Botree Product':'amber','On track':'green'};
+
+  document.getElementById('da-summary').innerHTML = `
+    ${delayData.map(d=>`
+      <div class="da-card ${colorMap[d.reason]||'blue'}">
+        <div class="da-reason">${d.reason}</div>
+        <div class="da-val">${d.customers}</div>
+        <div class="da-sub">ARR: ₹${d.arr.toFixed(4)} Cr · Monthly Loss: ₹${d.monthly.toFixed(4)} Cr</div>
+        <div class="da-sub" style="margin-top:4px">${d.pct.toFixed(1)}% of total ARR</div>
+      </div>`).join('')}
+    <div class="da-card blue">
+      <div class="da-reason">TOTAL</div>
+      <div class="da-val">16</div>
+      <div class="da-sub">ARR: ₹${totalARR.toFixed(4)} Cr</div>
+      <div class="da-sub" style="margin-top:4px;font-weight:600;color:var(--RED)">Monthly Loss: ₹${totalMonthly.toFixed(4)} Cr</div>
+    </div>`;
+
+  // Pie chart
+  const pieColors = ['#8b1a1a','#c04040','#7a4a00','#b8860b','#1a3a2a'];
+  destroyChart('c-delay-pie');
+  charts['c-delay-pie'] = new Chart(document.getElementById('c-delay-pie'),{
+    type:'doughnut',
+    data:{
+      labels:delayData.map(d=>d.reason),
+      datasets:[{data:delayData.map(d=>d.monthly),backgroundColor:pieColors,borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:9}}},tooltip:{callbacks:{label:ctx=>`₹${ctx.parsed.toFixed(4)} Cr/month`}}}}
+  });
+
+  // Customer breakdown table from Delay Analysis sheet
+  const breakdown = [
+    {reason:'Botree Deployment',customer:'Meril Lifesciences',product:'CSNG (SaaS)',team:'Solanki',arr:0.54,monthly:0.045},
+    {reason:'Botree Product',customer:'Gala',product:'SFA SaaS',team:'Salil',arr:0.216,monthly:0.018},
+    {reason:'Botree Product',customer:'Olivine',product:'SFA SaaS',team:'Nidhish',arr:0.0748,monthly:0.006233},
+    {reason:'Botree Product',customer:'Henkel',product:'SFA SaaS (BA Persona)',team:'Salil',arr:0.0135,monthly:0.001125},
+    {reason:'Botree Product',customer:'Hamilton',product:'DMS + FlexiDMS + SFA',team:'Salil',arr:0.47,monthly:0.039167},
+    {reason:'Botree Product',customer:'Triveni Tea',product:'SFA SaaS',team:'Solanki',arr:0.036,monthly:0.003},
+    {reason:'Botree Product',customer:'Triveni Tea',product:'CSNG (SaaS)',team:'Solanki',arr:0.042,monthly:0.0035},
+    {reason:'Customer',customer:'JacOlivol',product:'SFA SaaS',team:'Solanki',arr:0.06,monthly:0.005},
+    {reason:'Customer',customer:'Hector',product:'FlexiDMS',team:'Sahoo',arr:0.147,monthly:0.01225},
+    {reason:'Customer',customer:'RC Mexico',product:'CSNG (SaaS)',team:'Nidhish',arr:0,monthly:0},
+    {reason:'Customer',customer:'V-Guard Phase 2',product:'CSNG (SaaS)',team:'Sahoo',arr:0.19,monthly:0.015833},
+    {reason:'Customer',customer:'Kluber',product:'SFA SaaS',team:'Salil',arr:0.06,monthly:0.005},
+    {reason:'Customer',customer:'Darshan',product:'SFA SaaS',team:'Nikhil',arr:0.15,monthly:0.0125},
+    {reason:'Customer & Botree Product',customer:'SAIL',product:'DMS',team:'Drupad',arr:0.12,monthly:0.01},
+    {reason:'On track',customer:'Kenvue PH',product:'SFA SaaS',team:'Salil',arr:0.5355,monthly:0.044625},
+    {reason:'On track',customer:'Linc Limited',product:'FlexiDMS + SFA',team:'Sahoo',arr:0.21,monthly:0.0175},
+  ];
+
+  document.getElementById('delay-breakdown-tbl').innerHTML = `
+    <thead><tr><th>Delay Reason</th><th>Customer</th><th>Product</th><th>Sales Team</th><th>ARR (Crs)</th><th>Monthly Loss (Crs)</th></tr></thead>
+    <tbody>${breakdown.map(b=>`
+      <tr>
+        <td><span style="font-size:9px;font-weight:600;color:${b.reason.includes('On track')?'var(--G)':'var(--RED)'}">${b.reason}</span></td>
+        <td><strong>${b.customer}</strong></td>
+        <td style="font-size:11px">${b.product}</td>
+        <td>${b.team}</td>
+        <td>${b.arr>0?b.arr.toFixed(4):'—'}</td>
+        <td style="color:${b.monthly>0?'var(--RED)':'var(--ink4)'};font-weight:${b.monthly>0?'600':'400'}">${b.monthly>0?b.monthly.toFixed(4):'—'}</td>
+      </tr>`).join('')}</tbody>`;
+
+  // Delayed deals detail
+  const delayedDeals = deals.filter(d=>d.delayReason&&d.delayReason!=='');
+  document.getElementById('delay-deals-body').innerHTML = delayedDeals.map(d=>`
+    <tr onclick="showDeal(${d.sno})">
+      <td><strong>${d.customer}</strong></td>
+      <td>${d.product}</td>
+      <td>${d.salesTeam}</td>
+      <td>${fmtN(d.arrValue,4)}</td>
+      <td style="color:var(--RED);font-weight:500">${d.arrValue>0?fmtN(d.arrValue/12,4):'—'}</td>
+      <td>${statusBadge(d.status)}</td>
+      <td style="color:${d.delayReason==='On track'?'var(--G)':'var(--RED)'};font-size:10.5px;font-weight:600">${d.delayReason}</td>
+      <td style="font-size:10px;color:var(--ink3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.sdhComment}">${d.sdhComment||d.reviewComment||'—'}</td>
+    </tr>`).join('');
+}
+
+// ─── RISKS ────────────────────────────────────────────────────────────────────
+function renderRisks(){
+  const risks = deals.filter(d=>(d.sdhComment&&d.sdhComment.length>5)||(d.delayReason&&d.delayReason!==''));
+  risks.sort((a,b)=>(b.arrValue||0)-(a.arrValue||0));
+  document.getElementById('risks-list').innerHTML = `<div class="g3">${risks.slice(0,12).map(d=>{
+    const isRed = d.delayReason&&d.delayReason!=='On track'&&d.delayReason!=='';
+    const cls = isRed?'r':d.status==='Live'?'g':'gr';
+    return `<div class="ins ${cls}" style="cursor:pointer" onclick="showDeal(${d.sno})">
+      <div class="ih">${isRed?'⚠':'⚑'} ${d.customer} — ${d.product}</div>
+      <div class="ib" style="margin-bottom:6px">${d.sdhComment.slice(0,120)}${d.sdhComment.length>120?'…':''}</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${statusBadge(d.status)}<span style="font-size:9px;color:var(--ink4)">${d.delayReason||''}</span></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ─── SHAREPOINT LIVE FETCH ────────────────────────────────────────────────────
+
+
+
+  window.open(url,'_blank');
+}
+
+  spConfig = {...(spConfig||{}), url};
+  localStorage.setItem('sp_config', JSON.stringify(spConfig));
+  showSPMsg('Link saved!','green');
+}
+
+
+
+  showUploadStatus('Reading file…','gray');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const wsName = wb.SheetNames.find(n=>n.includes('New Orders'))||wb.SheetNames[0];
+      const ws = wb.Sheets[wsName];
+      const raw = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+      const parsed = parseXLSXRows(raw);
+      if(parsed.length===0){showUploadStatus('Could not parse data — make sure this is the correct Excel file','red');return;}
+      deals = parsed;
+      const now = new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      document.getElementById('last-updated').textContent = now;
+      document.getElementById('sync-status').innerHTML = `Updated ${now} · `;
+      
+      showUploadStatus('Loaded ' + deals.length + ' deals from "' + file.name + '"! Dashboard updated.','green');
+      rebuildDashboard();
+      setTimeout(closeSPModal, 2000);
+    } catch(err){
+      showUploadStatus('Error reading file: '+err.message,'red');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+
+async function syncData(){ showSPConfig(); }
+
+function parseXLSXRows(raw){
+  // Find header row
+  let hdrRow = -1;
+  for(let i=0;i<raw.length;i++){
+    if(raw[i]&&raw[i].includes('Customer Name')){hdrRow=i;break;}
+  }
+  if(hdrRow<0) return deals;
+  const headers = raw[hdrRow];
+  const colIdx = name => headers.findIndex(h=>h&&h.toString().includes(name));
+  const ci = {
+    sno: colIdx('S.No'), customer: colIdx('Customer Name'), salesTeam: colIdx('Sales Team'),
+    ch: colIdx('CH'), product: colIdx('Product'), orderType: colIdx('Order Type'),
+    orderValue: colIdx('Order Value\n(Rs Crs)'), arrValue: colIdx('ARR\n(Rs Crs)'),
+    oneTimeValue: colIdx('One Time\n(Rs Crs)'), arrInvoiced: colIdx('ARR Invoiced'),
+    arrBalance: colIdx('ARR Balance'), oneTimeInvoiced: colIdx('One Time  Invoiced'),
+    dateVerbal: colIdx('Verbal'), datePO: colIdx('PO'), dateContract: colIdx('Contract'),
+    dateDiscovery: colIdx('Scoping'), dateMasterData: colIdx('Master Data'),
+    dateDev: colIdx('Development Start'), dateUAT: colIdx('UAT'), dateGoLive: colIdx('Go Live'),
+    dateScaling: colIdx('Scaling'), sdhComment: colIdx('SDH Comment'),
+    reviewComment: colIdx('Review Comments'), status: colIdx('Status'), delayReason: colIdx('Reason for delay')
+  };
+  const rows = [];
+  for(let i=hdrRow+2;i<raw.length;i++){
+    const r = raw[i];
+    if(!r||!r[ci.sno]||isNaN(parseInt(r[ci.sno]))) continue;
+    const norm = s=>{if(!s||s==='nan'||s==='\u00a0')return '';return String(s).trim();};
+    const normSt = s=>{const v=norm(s);if(v==='Scaled up')return 'Scaled Up';if(v==='Drop')return 'Dropped';if(v==='Dev')return 'Dev/Pilot';return v||'Not Started';};
+    rows.push({
+      sno:+r[ci.sno], customer:norm(r[ci.customer]), salesTeam:norm(r[ci.salesTeam]),
+      ch:norm(r[ci.ch]), product:norm(r[ci.product]), orderType:norm(r[ci.orderType]),
+      orderValue:+(r[ci.orderValue]||0), arrValue:+(r[ci.arrValue]||0),
+      oneTimeValue:+(r[ci.oneTimeValue]||0), arrInvoiced:+(r[ci.arrInvoiced]||0),
+      arrBalance:+(r[ci.arrBalance]||0), oneTimeInvoiced:+(r[ci.oneTimeInvoiced]||0),
+      dateVerbal:norm(r[ci.dateVerbal]), datePO:norm(r[ci.datePO]),
+      dateContract:norm(r[ci.dateContract]), dateDiscovery:norm(r[ci.dateDiscovery]),
+      dateMasterData:norm(r[ci.dateMasterData]), dateDev:norm(r[ci.dateDev]),
+      dateUAT:norm(r[ci.dateUAT]), dateGoLive:norm(r[ci.dateGoLive]),
+      dateScaling:norm(r[ci.dateScaling]), sdhComment:norm(r[ci.sdhComment]),
+      reviewComment:norm(r[ci.reviewComment]), status:normSt(r[ci.status]),
+      delayReason:norm(r[ci.delayReason])
+    });
+  }
+  return rows.length>0?rows:deals;
+}
+
+function rebuildDashboard(){
+  renderOverview();
+  const activeTab = document.querySelector('.ntab.on')?.dataset.t;
+  if(activeTab==='deals') renderDeals();
+  if(activeTab==='funnel') renderFunnel();
+  if(activeTab==='team') renderTeam();
+  if(activeTab==='delay') renderDelay();
+  if(activeTab==='risks') renderRisks();
+}
+
+function destroyChart(id){
+  if(charts[id]){charts[id].destroy();delete charts[id];}
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('ndate').textContent = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+// Initial fetch + start polling
+fetchData();
+pollTimer = setInterval(fetchData, POLL_INTERVAL);
+</script>
+</body>
+</html>
